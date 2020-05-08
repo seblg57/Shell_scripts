@@ -40,21 +40,21 @@ function os_info(){
 }
 
 function mysqldump(){
-	write_header " MySQL Dump "
-	echo -n "Enter the username for MySQL and press [ENTER]: "
-	read mysqlusr
-	echo -e
-	echo -s "Enter the password for $mysqlusr and press [ENTER]: "
-	read mysqlpasswd
-	echo -e
-	echo -n "Enter the database name for MySQL and press [ENTER]: "
-	read mysqldb
+	write_header " Please ensure that the Threatconnect application is stopped before launching this command "
+	while read yn; do
+	read -p "Are you sure you want to continue?" yn
+		case "$yn" in
+			"Y|y" ) mysqldump -u root -pPassword1! threatconnect > /tmp/threatconnect_`date +%F`.sql ; break ;;
+			"N|n" ) exit ;;
+			* ) echo "Please answer yes or no.";;
+		esac
+	done
 	#mysqldump -u $mysqlusr -p$mysqlpasswd $mysqldb | gzip > /tmp/threatconnect_`date +%F`.sql.gz
-	#mysqldump --opt --user=${mysqlusr} --password=${mysqlpasswd} ${mysqldb} > /tmp/threatconnect_`date +%F`.sql.gz
-
-	echo "Database backup successfully completed -> /tmp/threatconnect_`date +%F`.sql.gz"
+	#mysqldump --opt --user=${mysqlusr} --password=${mysqlpasswd} ${mysqldb} > /tmp/threatconnect_`date +%F`.sql
+	ls -lrt /tmp/threatconnect_`date +%F`.sql
 	pause
 }
+
 
 
 
@@ -65,7 +65,7 @@ function mysql_info(){
 	pause 
 }
   
-function user_info(){
+function mysql_service(){
 	local cmd="$1"
 	case "$cmd" in 
 		stop) write_header " Stop MySQL Service "; systemctl stop mysqld ; pause ;;
@@ -91,10 +91,10 @@ function read_input(){
 	read -p "Enter your choice [ 1 - 7 ] " c
 	case $c in
 		1)	os_info ;;
-		2)	mysqldump ;;
+		2)	mysqldump "dump" ;;
 		3)	mysql_info ;;
-		4)	user_info "stop" ;;
-		5)	user_info "start" ;;
+		4)	mysql_service "stop" ;;
+		5)	mysql_service "start" ;;
 		6)	mysqladminreset ;;
 		7)	echo "Bye!"; exit 0 ;;
 		*)	
@@ -104,7 +104,7 @@ function read_input(){
 }
 
 # ignore CTRL+C, CTRL+Z and quit singles using the trap
-trap '' SIGINT SIGQUIT SIGTSTP
+#trap '' SIGINT SIGQUIT SIGTSTP
 
 # main logic
 while true
