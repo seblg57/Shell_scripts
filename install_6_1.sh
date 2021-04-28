@@ -266,9 +266,9 @@ function installRedis5 () {
 function installtcenv () {
                                                 read -p "Do you want to download the Threatconnect Archive ? [yes/no] : "  tcdown608
                 if [ $tcdown608 == 'yes' ] ; then
-                                                wget https://tc-cs-app-delivery.s3.amazonaws.com/Deployments/threatconnect-v6.1.0.zip
+                                                wget https://tc-cs-app-delivery.s3.amazonaws.com/Deployments/threatconnect-v6.1.1a.zip
                                                 read -p "Where do you want to extract the Threatconnect Archive ? [ex : /opt] : "  extracttc
-                                                unzip threatconnect-v6.1.0.zip -d $extracttc
+                                                unzip threatconnect-v6.1.1a.zip -d $extracttc
                                                 yum -y install firewalld
                                                 chown -R threatconnect:threatconnect $extracttc/threatconnect
                 else
