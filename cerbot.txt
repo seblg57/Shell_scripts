@@ -1,0 +1,108 @@
+
+#/bin/sh
+TCKS_PATH="/opt/threatconnect/config/keystore.jks"
+TCKS_PASS="password"
+JAVA_KS_PATH="/etc/pki/java/cacerts"
+JAVA_KS_PASS="changeit"
+FQDN="*.purplecore.xyz"
+cd /opt
+echo "Stopping TC"
+service threatconnect stop
+echo "Stopping Nginx"
+service nginx stop
+echo "renaming live folder in /etc/letsencrypt"
+rm -rf /etc/letsencrypt/live.bak
+echo "moving live to live.bak in /etc/letsencrypt"
+mv /etc/letsencrypt/live/ /etc/letsencrypt/live.bak
+echo "submitting cert request with DNS challenge"
+
+
+echo "starting nginx"
+service nginx start
+echo "deleting keystore.jks"
+rm -rf keystore.jks
+echo "deleting fullcert.pem cert if it exists locally"
+rm -rf fullchain.pem
+echo "concatting LE live certs"
+wget https://letsencrypt.org/certs/trustid-x3-root.pem.txt
+cat trustid-x3-root.pem.txt >> /etc/letsencrypt/live/*/fullchain.pem
+cp /etc/letsencrypt/live/*/fullchain.pem .
+echo "exporting certs"
+openssl pkcs12 -export -out fullchain.pkcs12 -in fullchain.pem -name $FQDN -password pass:$TCKS_PASS -inkey /etc/letsencrypt/live/*/privkey.pem
+echo "creating keystore.jks"
+keytool -genkey -noprompt \
+ -alias server \
+ -dname "CN=$FQDN, OU=IT, O=DOITNC, L=TCSEB, S=LO, C=FR" \
+ -keystore keystore.jks \
+ -storepass $TCKS_PASS \
+ -keypass $TCKS_PASS
+keytool -importkeystore -deststorepass $TCKS_PASS -destkeystore keystore.jks -srckeystore fullchain.pkcs12 -srcstoretype PKCS12 -srcstorepass $TCKS_PASS
+keytool -changealias -keystore keystore.jks -alias $FQDN -destalias tc -storepass $TCKS_PASS
+echo "deleting old keystore.jks.bak and moving old tc keystore to keystore.jks.bak"
+rm -rf /opt/threatconnect/config/keystore.jks.bak
+mv /opt/threatconnect/config/keystore.jks /opt/threatconnect/config/keystore.jks.bak
+echo "copying new keystore.jks to /opt/threatconnect/config/keystore.jks"
+cp keystore.jks /opt/threatconnect/config/keystore.jks
+echo "Downloading all LE root's"
+wget https://letsencrypt.org/certs/letsencryptauthorityx1.der
+wget https://letsencrypt.org/certs/letsencryptauthorityx2.der
+wget https://letsencrypt.org/certs/letsencryptauthorityx3.der
+wget https://letsencrypt.org/certs/lets-encrypt-x1-cross-signed.der
+wget https://letsencrypt.org/certs/lets-encrypt-x2-cross-signed.der
+wget https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.der
+wget https://letsencrypt.org/certs/lets-encrypt-x4-cross-signed.der
+echo "Adding LE Root certs to TC Keystore"
+keytool -trustcacerts -keystore $TCKS_PATH -storepass $TCKS_PASS -noprompt -importcert -alias isrgrootx1 -file letsencryptauthorityx1.der
+keytool -trustcacerts -keystore $TCKS_PATH -storepass $TCKS_PASS -noprompt -importcert -alias isrgrootx2 -file letsencryptauthorityx2.der
+keytool -trustcacerts -keystore $TCKS_PATH -storepass $TCKS_PASS -noprompt -importcert -alias isrgrootx3 -file letsencryptauthorityx3.der
+keytool -trustcacerts -keystore $TCKS_PATH -storepass $TCKS_PASS -noprompt -importcert -alias letsencryptauthorityx1 -file lets-encrypt-x1-cross-signed.der
+keytool -trustcacerts -keystore $TCKS_PATH -storepass $TCKS_PASS -noprompt -importcert -alias letsencryptauthorityx2 -file lets-encrypt-x2-cross-signed.der
+keytool -trustcacerts -keystore $TCKS_PATH -storepass $TCKS_PASS -noprompt -importcert -alias letsencryptauthorityx3 -file lets-encrypt-x3-cross-signed.der
+keytool -trustcacerts -keystore $TCKS_PATH -storepass $TCKS_PASS -noprompt -importcert -alias letsencryptauthorityx4 -file lets-encrypt-x4-cross-signed.der
+keytool -trustcacerts -keystore $TCKS_PATH -storepass $TCKS_PASS -noprompt -importcert -alias www.purplecore.xyz -file fullchain.pem
+echo "Adding LE Root to Java Keystore"
+keytool -trustcacerts -keystore $JAVA_KS_PATH -storepass $JAVA_KS_PASS -noprompt -importcert -alias isrgrootx1 -file letsencryptauthorityx1.der
+keytool -trustcacerts -keystore $JAVA_KS_PATH -storepass $JAVA_KS_PASS -noprompt -importcert -alias isrgrootx2 -file letsencryptauthorityx2.der
+keytool -trustcacerts -keystore $JAVA_KS_PATH -storepass $JAVA_KS_PASS -noprompt -importcert -alias isrgrootx3 -file letsencryptauthorityx3.der
+keytool -trustcacerts -keystore $JAVA_KS_PATH -storepass $JAVA_KS_PASS -noprompt -importcert -alias letsencryptauthorityx1 -file lets-encrypt-x1-cross-signed.der
+keytool -trustcacerts -keystore $JAVA_KS_PATH -storepass $JAVA_KS_PASS -noprompt -importcert -alias letsencryptauthorityx2 -file lets-encrypt-x2-cross-signed.der
+keytool -trustcacerts -keystore $JAVA_KS_PATH -storepass $JAVA_KS_PASS -noprompt -importcert -alias letsencryptauthorityx3 -file lets-encrypt-x3-cross-signed.der
+keytool -trustcacerts -keystore $JAVA_KS_PATH -storepass $JAVA_KS_PASS -noprompt -importcert -alias letsencryptauthorityx4 -file lets-encrypt-x4-cross-signed.der
+echo "Adding fullchain to java cacerts and system ca-certs"
+keytool -import -keystore /etc/pki/java/cacerts -storepass changeit -noprompt -trustcacerts -file fullchain.pem -alias LE_root$(date +%Y-%m-%d-%H.%M.%S)
+cp fullchain.pem /etc/pki/ca-trust/source/anchors/fullchain$(date +%Y-%m-%d-%H.%M.%S).pem
+echo "Removing downloded .der files and fullchain.pem from /opt"
+rm -f letsencryptauthorityx1.der letsencryptauthorityx2.der lets-encrypt-x1-cross-signed.der lets-encrypt-x2-cross-signed.der lets-encrypt-x3-cross-signed.der lets-encrypt-x4-cross-signed.der fullchain.pem
+echo "updating root CA trust"
+update-ca-trust
+update-ca-trust force-enable
+update-ca-trust extract
+echo "fixing permissions"
+chown -R threatconnect:threatconnect /opt
+echo "Removing Nginx Logs"
+rm -rf /var/log/nginx/*
+echo "deleting all unzipped PB apps"
+rm -rf /opt/threatconnect/exchange/programs/playbook/*
+echo "delete all PB logs, app logs and services logs"
+rm -rf /opt/threatconnect/exchange/jobs/services/*
+rm -rf /opt/threatconnect/exchange/jobs/playbooks/*
+rm -rf /opt/threatconnect/exchange/jobs/apps/*
+echo " delete stale executions in /opt/threatconnect/app/eap/standalone/data/"
+rm -rf /opt/threatconnect/app/eap/standalone/data/
+echo "delete all TC related logs in /opt/threatconnect/app/log/*"
+rm -rf /opt/threatconnect/app/log/*.lo*
+echo "Cleaning up /tmp"
+rm -rf /tmp/*
+echo "FLUSH ALL data from Redis"
+/usr/local/bin/redis-cli FLUSHALL
+echo "Kill any zombied threatconnect or tc-job processes"
+pkill -9 -u `id -u tc-job`
+pkill -9 -u `id -u threatconnect`
+echo "Starting ThreatConnect"
+service threatconnect start
+echo "Starting Nginx"
+service nginx start
+echo "Sleeping 5 seconds..."
+sleep 5
+echo "Tailing /opt/threatconnect/app/log/server.log"
+tail -f /opt/threatconnect/app/log/server.log
