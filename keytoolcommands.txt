@@ -1,0 +1,10 @@
+#########################################
+
+
+CREATE KEYSTORE FROM KEY + CRT
+
+
+
+openssl pkcs12 -export -out domainname.pfx -inkey domainname.key -in domainname.crt -password pass:mypassword
+
+keytool -importkeystore -srckeystore domainname.pfx -srcstoretype pkcs12 -srcalias 1 -srcstorepass mypassword -destkeystore domainname.jks -deststoretype jks -deststorepass mypassword -destalias myalias
