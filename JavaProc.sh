@@ -14,12 +14,13 @@ then
 	ps -eLo pid,lwp,pcpu,vsz,comm | grep $tcpid | sort -nr | tail -n 10
 	echo "***************************"
 	ps -e -T | grep java | grep $tcpid | grep -v "00:00:00" | awk -F" " '{print $1,$2,$4}'| sort -r -k 3  > ps.out
+	
 	topjproc=$(cat ps.out | awk -F" " '{print $2}' | head -20)
-	echo ${topjproc}
-	for i in ${topjproc}
+	echo $topjproc
+	for i in $topjproc
 		do
 		thread=$(printf '%x\n' $i)
-		grep "$thread" jstack.out
+		grep "nid=0x$(thread)" jstack.out
 		cat ps.out | grep $i| awk -F" " '{print $3}'
 		echo "***************************"
 		rm -rf ps.out jstack.out
@@ -27,3 +28,5 @@ then
 else
 	printf "\nAborting\n"
 fi
+
+
