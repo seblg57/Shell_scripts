@@ -1,0 +1,40 @@
+GENERATE CRT KEY JKS SAN.CNF
+
+vi san.cnf
+
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+[req_distinguished_name]
+commonName      =       ServerName
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+[alt_names]
+DNS = server.com, FQDN.server, IP
+
+Generate key+crt with the san.cnf
+openssl req  -x509 -newkey rsa:4096 -sha256 -days 3560 -nodes -keyout server.key -out server.crt -config san.cnf
+
+Generate the pfx
+openssl pkcs12 -export -out keystore.pfx -inkey server.key -in server.crt  -password pass:password
+
+Convert pfx to jks
+keytool -importkeystore -srckeystore keystore.pfx -srcstoretype pkcs12 -srcalias 1 -srcstorepass password -destkeystore keystore.jks -deststoretype jks -deststorepass password -destalias tc
+
+Check alt names in jks
+keytool -list -keystore keystore.jks -storepass password
+
+Export crt as a der
+keytool -export -alias tc -file test.der -keystore keystore.jks
+
+Convert der to crt
+openssl x509 -inform DER -in test.der -out test.crt
+
+Verify the crt and alt name for SAN
+openssl x509 -in test.crt -text -noout
+
+Verify Cert in Browser
+
