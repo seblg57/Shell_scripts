@@ -1,0 +1,160 @@
+#!/bin/bash
+#
+# opensearch service for Centos7/8/RH/RockyLinux
+#   cp opensearchservice /etc/init.d/
+#	sed -i 's/\r//' opensearchservice
+#	chkconfig --add opensearchservice
+#	systemctl enable opensearchservice
+#	systemctl daemon-reload
+#   
+#   Description: Starts and stops a single opensearch instance on this system
+######################################################
+#################		SEBUX      ###################
+######################################################
+#
+#
+if [ -f /etc/rc.status ]; then
+    . /etc/rc.status
+    rc_reset
+fi
+
+#
+# Source function library.
+#
+if [ -f /etc/rc.d/init.d/functions ]; then
+    . /etc/rc.d/init.d/functions
+fi
+
+# Sets the default values for opensearch variables used in this script
+USER=opensearch
+BASEDIR=/opt/opensearch-1.1.0
+OPENSEARCH_HOME=/opt/opensearch-1.1.0
+LOGDIR=/opt/opensearch-1.1.0/logs
+SETTINGS=/opt/opensearch-1.1.0/config
+MAX_OPEN_FILES=65535
+MAX_MAP_COUNT=262144
+EXEC=$BASEDIR/bin/opensearch
+prog=opensearch
+PIDFILE=$BASEDIR/${prog}.pid
+lockfile=/var/lock/subsys/$prog
+
+if [ ! -x "$EXEC" ]; then
+    echo "The opensearch startup script does not exists or it is not executable, tried: $exec"
+    exit 1
+fi
+
+start() {
+  echo -n "Starting $prog..."
+  echo ""
+  if [ -f $PIDFILE ]; then
+    read ppid < $PIDFILE
+    if [ `ps --pid $ppid 2> /dev/null | grep -c $ppid 2> /dev/null` -eq '1' ]; then
+      echo -n "$prog is already running"
+      failure
+      echo
+      return 1
+    else
+      rm -f $PIDFILE
+    fi
+  fi
+
+  mkdir -p $(dirname $PIDFILE)
+  chown $USER $(dirname $PIDFILE) || true
+
+
+ if [ -r /etc/rc.d/init.d/functions ]; then
+   daemon --user $USER --pidfile $PIDFILE $EXEC -Eplugins.security.disabled=true -Ebootstrap.memory_lock=true -p $PIDFILE -d
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && touch $lockfile
+    return $retval
+
+ else
+  su - $USER -c "cd $BASEDIR/bin; $EXEC -Eplugins.security.disabled=true -Ebootstrap.memory_lock=true" > /dev/null 2>&1 &
+ fi
+
+}
+
+stop() {
+    CHECKPID=$(ps -ef | grep opensearch | grep -v grep | awk '{print $2}')
+    echo -n $"Stopping $prog: "
+    # stop it here, often "killproc $prog"
+    killproc -p $PIDFILE -d 86400 $prog
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && rm -f $lockfile
+    return $retval
+    rm -rf $PIDFILE
+ if [ -z "$CHECKPID" ]; then
+    ps -ef | grep opensearch | grep -v grep | awk '{print $2}' | xargs kill
+ fi
+}
+
+status() {
+  if [ -f $PIDFILE ]; then
+    read ppid < $PIDFILE
+    if [ `ps --pid $ppid 2> /dev/null | grep -c $ppid 2> /dev/null` -eq '1' ]; then
+      echo "$prog is running (pid $ppid)"
+      return 0
+    else
+      echo "$prog dead but pid file exists"
+      return 1
+    fi
+  fi
+  echo "$prog is not running"
+  return 3
+}
+
+restart() {
+    stop
+    start
+}
+
+reload() {
+    restart
+}
+
+force_reload() {
+    restart
+}
+
+rh_status() {
+    # run checks to determine if the service is running or use generic status
+    status -p $pidfile $prog
+}
+
+rh_status_q() {
+    rh_status >/dev/null 2>&1
+}
+
+
+case "$1" in
+    start)
+        rh_status_q && exit 0
+        $1
+        ;;
+    stop)
+        rh_status_q || exit 0
+        $1
+        ;;
+    restart)
+        $1
+        ;;
+    reload)
+        rh_status_q || exit 7
+        $1
+        ;;
+    force-reload)
+        force_reload
+        ;;
+    status)
+        rh_status
+        ;;
+    condrestart|try-restart)
+        rh_status_q || exit 0
+        restart
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload}"
+        exit 2
+esac
