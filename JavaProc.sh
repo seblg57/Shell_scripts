@@ -2,10 +2,17 @@
 ######################################################
 #################		SEBUX      ###################
 ######################################################
+#  _____________________  _     _ _     _ 
+# / _____|_______|____  \(_)   (_|_)   (_)
+#( (____  _____   ____)  )_     _ \ \__//  
+# \____ \|  ___) |  __  (| |   | | |   |  
+# _____) ) |_____| |__)  ) |___| |/ / \ \ 
+#(______/|_______)______/ \_____/|_|   |_|
+# 
 exec 3>&1 4>&2
 trap 'exec 2>&4 1>&3' 0 1 2 3
 exec 1>log.out 2>&1
-tcpid=$(ps -ef | grep threatconnect.jar | grep -v grep | awk '{print $2}')
+tcpid=$(ps -ef | grep "XXXXXXXXX" | grep -v grep | awk '{print $2}')
 jdkpath=$(grep -i JAVA_HOME /home/threatconnect/.bashrc | cut -d= -f2-)
 tcjob=$(cat /etc/passwd | grep tc-job | cut -d: -f 1)
 
