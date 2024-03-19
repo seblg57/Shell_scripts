@@ -1,0 +1,88 @@
+#!/bin/bash
+
+# Function to execute FIPS Compliance Status check
+check_fips_status() {
+    echo "Checking FIPS Compliance Status:"
+    echo "--------------------------------"
+    echo "FIPS Compliance Status:"
+    cat /proc/sys/crypto/fips_enabled
+    echo ""
+}
+
+# Function to enable FIPS Mode
+enable_fips_mode() {
+    echo "Enabling FIPS Mode:"
+    echo "-------------------"
+    sudo vi /etc/sysconfig/kernel
+    echo "# Enable FIPS mode" | sudo tee -a /etc/sysconfig/kernel
+    echo "FIPS=1" | sudo tee -a /etc/sysconfig/kernel
+    echo ""
+}
+
+# Function to rebuild the Initial RAM Disk (initramfs)
+rebuild_initramfs() {
+    echo "Rebuilding the Initial RAM Disk (initramfs):"
+    echo "--------------------------------------------"
+    sudo dracut -f
+    echo ""
+}
+
+# Function to reboot the system
+reboot_system() {
+    echo "Rebooting the System:"
+    echo "---------------------"
+    sudo reboot
+    echo ""
+}
+
+# Function to verify FIPS Mode
+verify_fips_mode() {
+    echo "Verifying FIPS Mode:"
+    echo "---------------------"
+    echo "FIPS Mode Status:"
+    cat /proc/sys/crypto/fips_enabled
+    echo ""
+}
+
+# Function to verify Cryptographic Libraries
+verify_crypto_libraries() {
+    echo "Verifying Cryptographic Libraries:"
+    echo "----------------------------------"
+    openssl version -fips
+    echo ""
+}
+
+# Function to run FIPS Compliance Tests
+run_fips_tests() {
+    echo "Running FIPS Compliance Tests:"
+    echo "------------------------------"
+    sudo yum install -y fipscheck
+    sudo fipscheck
+}
+
+# Display menu
+while true; do
+    echo "Choose an option:"
+    echo "1. Check FIPS Compliance Status"
+    echo "2. Enable FIPS Mode"
+    echo "3. Rebuild Initial RAM Disk (initramfs)"
+    echo "4. Reboot the System"
+    echo "5. Verify FIPS Mode"
+    echo "6. Verify Cryptographic Libraries"
+    echo "7. Run FIPS Compliance Tests"
+    echo "8. Exit"
+
+    read -p "Enter your choice: " choice
+
+    case $choice in
+        1) check_fips_status ;;
+        2) enable_fips_mode ;;
+        3) rebuild_initramfs ;;
+        4) reboot_system ;;
+        5) verify_fips_mode ;;
+        6) verify_crypto_libraries ;;
+        7) run_fips_tests ;;
+        8) echo "Exiting..."; exit ;;
+        *) echo "Invalid option. Please choose a number between 1 and 8." ;;
+    esac
+done
