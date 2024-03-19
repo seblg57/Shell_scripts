@@ -1,7 +1,7 @@
 
 Linux Scripts Repository!
 
-[sebux (1)](https://github.com/seblg57/Shell_scripts/assets/56646434/2a2c59ef-829d-4b7e-964f-b0f8b2a7d928)
+![sebux (1)](https://github.com/seblg57/Shell_scripts/assets/56646434/2a2c59ef-829d-4b7e-964f-b0f8b2a7d928)
 
 This repository contains a collection of useful scripts for Linux systems. These scripts cover a variety of tasks and utilities that can help simplify system administration, automate repetitive tasks, and enhance productivity on Linux-based environments.
 
